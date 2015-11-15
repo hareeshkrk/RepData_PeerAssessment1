@@ -1,0 +1,111 @@
+---
+title: "peerassessment1"
+output: html_document
+---
+
+The code below loads the activity data and preprocesses it by removing observations with unknown steps ("NA").
+
+
+```{r, echo = TRUE}
+activitydata <- read.csv("activity.csv")
+activitydataclean <- activitydata[!is.na(activitydata$steps),]
+```
+
+The total number of steps for each day are calculated and plotted using a histogram
+```{r, echo = TRUE}
+totalsteps <- aggregate(steps ~ date, data=activitydataclean, FUN = function(x) c(S = sum(x)))
+hist(totalsteps$steps)
+```
+The mean of total steps is
+```{r,echo=TRUE}
+mean(totalsteps$steps)
+```
+
+The median steps are
+
+```{r, echo = TRUE}
+median(totalsteps$steps)
+```
+
+The averate daily activity pattern looks like below
+```{r, echo = TRUE}
+avgintervalsteps <- aggregate(steps ~ interval, data=activitydataclean, FUN = function(x) c(M = mean(x)))
+plot(avgintervalsteps$interval,avgintervalsteps$steps,type = "l")
+```
+
+The maximum number of average steps for a given 5 minute interval is
+
+```{r, echo = TRUE}
+max(avgintervalsteps$steps)
+```
+
+the maximum is in the 5 minute interval ending with
+
+```{r, echo = TRUE}
+avgintervalsteps[avgintervalsteps$steps == max(avgintervalsteps$steps), 1]
+```
+
+The total number of missing values in the dataset are 
+```{r, echo = TRUE}
+sum(is.na(activitydata$steps))
+```
+
+The missing data is filled with average number os steps in 5 minute interval
+```{r, echo = TRUE}
+activitydatafilled <- activitydata
+activitydatafilled$steps[is.na(activitydata$steps)]=mean(activitydataclean$steps)
+
+```
+
+The histogram with the new data set with filled in missign values looks like below
+
+```{r, echo = TRUE}
+totalstepsfilled <- aggregate(steps ~ date, data=activitydatafilled, FUN = function(x) c(S = sum(x), A= mean(x), M = median(x)))
+hist(totalstepsfilled$steps)
+```
+
+The mean and median steps per day with the new data set are
+
+The mean of total steps is
+```{r,echo=TRUE}
+mean(totalstepsfilled$steps)
+```
+
+The median steps are
+
+```{r, echo = TRUE}
+median(totalstepsfilled$steps)
+```
+
+and are very different to the ones before. 
+
+
+Now this data set is added a factor variable "weekday" and "weekend"
+
+```{r, echo = TRUE}
+activitydatafilledweekday <- activitydatafilled
+activitydatafilledweekday$weekend  = chron::is.weekend(activitydatafilledweekday$date)
+activitydatafilledweekday$weekend[activitydatafilledweekday$weekend] <- "weekend"
+activitydatafilledweekday$weekend[activitydatafilledweekday$weekend == "FALSE"] <- "weekday"
+```
+
+A panel plot of steps during weekend and weekdays with the filled-in dataset looks like below
+
+```{r, echo = TRUE}
+activitydatafilledweekdaytrue <- activitydatafilledweekday[activitydatafilledweekday$weekend == "weekday",]
+activitydatafilledweekdayfalse <- activitydatafilledweekday[activitydatafilledweekday$weekend == "weekend",]
+
+avgintervalstepsweekday <- aggregate(steps ~ interval, data=activitydatafilledweekdaytrue, FUN = function(x) c(M = mean(x)))
+avgintervalstepsweekend <- aggregate(steps ~ interval, data=activitydatafilledweekdayfalse, FUN = function(x) c(M = mean(x)))
+
+library(ggplot2)
+p1 <- ggplot(avgintervalstepsweekday,aes(x = interval, y = steps)) + geom_line() + ggtitle("Weekday")
+p2 <- ggplot(avgintervalstepsweekend,aes(x = interval, y = steps)) + geom_line() + ggtitle("Weekend")
+
+library(gridExtra)
+grid.arrange(p1,p2, ncol = 1)
+
+```
+
+
+
